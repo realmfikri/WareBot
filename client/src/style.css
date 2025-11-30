@@ -24,6 +24,50 @@ header {
   margin-bottom: 1rem;
 }
 
+.panel {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  margin-bottom: 1.25rem;
+  border: 1px solid #e2e8f0;
+}
+
+.panel-header h2 {
+  margin: 0;
+}
+
+.panel-header p {
+  margin: 0.1rem 0 0;
+  color: #475569;
+}
+
+.robot-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.robot-card {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.robot-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.robot-meta {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
 .status {
   display: inline-flex;
   align-items: center;

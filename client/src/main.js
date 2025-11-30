@@ -1,6 +1,7 @@
 const gridElement = document.getElementById('grid');
 const statusIndicator = document.getElementById('status-indicator');
 const statusText = document.getElementById('status-text');
+const robotList = document.getElementById('robot-list');
 
 let socket;
 let grid = [];
@@ -90,9 +91,9 @@ function renderTile(x, y, lookup = pathLookup()) {
   if (cell.obstacle) {
     status.textContent = 'Obstacle';
   } else if (robotAtStart) {
-    status.textContent = `${robotAtStart.name} start`;
+    status.textContent = `${robotAtStart.name} start (v${robotAtStart.speed ?? 1})`;
   } else if (robotAtGoal) {
-    status.textContent = `${robotAtGoal.name} goal`;
+    status.textContent = `${robotAtGoal.name} goal (v${robotAtGoal.speed ?? 1})`;
   } else if (pathCount > 0) {
     status.textContent = `Path x${pathCount}`;
   } else {
@@ -117,10 +118,49 @@ function applyCell(x, y, cell) {
   renderTile(x, y);
 }
 
+function renderRobotList() {
+  if (!robotList) return;
+  robotList.innerHTML = '';
+
+  robots.forEach((robot) => {
+    const card = document.createElement('div');
+    card.className = 'robot-card';
+
+    const title = document.createElement('h3');
+    title.textContent = robot.name;
+    card.appendChild(title);
+
+    const meta = document.createElement('div');
+    meta.className = 'robot-meta';
+
+    const speed = document.createElement('div');
+    speed.textContent = `Speed: ${robot.speed ?? 1}`;
+    const start = document.createElement('div');
+    start.textContent = `Position: (${robot.position?.x ?? 0}, ${robot.position?.y ?? 0})`;
+    const target = document.createElement('div');
+    target.textContent = `Target: (${robot.target?.x ?? 0}, ${robot.target?.y ?? 0})`;
+    const path = document.createElement('div');
+    path.textContent = `Path nodes: ${robot.path?.length ?? 0}`;
+
+    meta.appendChild(speed);
+    meta.appendChild(start);
+    meta.appendChild(target);
+    meta.appendChild(path);
+    card.appendChild(meta);
+
+    robotList.appendChild(card);
+  });
+}
+
+function syncRobots(nextRobots) {
+  robots = nextRobots || [];
+  renderRobotList();
+  renderGrid();
+}
+
 function handleSnapshot(payload) {
   grid = payload.grid || [];
-  robots = payload.robots || [];
-  renderGrid();
+  syncRobots(payload.robots || []);
 }
 
 function handleCellUpdate(payload) {
@@ -128,8 +168,7 @@ function handleCellUpdate(payload) {
 }
 
 function handleRobotPaths(payload) {
-  robots = payload.robots || [];
-  renderGrid();
+  syncRobots(payload.robots || []);
 }
 
 function connect() {
@@ -152,6 +191,9 @@ function connect() {
         handleCellUpdate(payload);
       }
       if (payload.type === 'EventRobotPathsUpdated') {
+        handleRobotPaths(payload);
+      }
+      if (payload.type === 'EventRobotListUpdated') {
         handleRobotPaths(payload);
       }
     } catch (error) {
