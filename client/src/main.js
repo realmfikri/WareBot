@@ -204,7 +204,15 @@ function connect() {
 
 function sendObstacleToggle(x, y) {
   const cell = grid?.[y]?.[x];
-  const type = cell?.obstacle ? 'EventObstacleCleared' : 'EventObstacleCreated';
+  const nextState = !cell?.obstacle;
+  const type = nextState ? 'EventObstacleCreated' : 'EventObstacleCleared';
+
+  applyCell(x, y, {
+    ...(cell || {}),
+    obstacle: nextState,
+    updatedAt: Date.now()
+  });
+
   if (socket?.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type, x, y }));
   }
