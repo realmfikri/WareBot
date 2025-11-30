@@ -282,3 +282,19 @@ function sendObstacleToggle(x, y) {
 setStatus(false);
 connect();
 renderMetrics();
+
+export { handleSnapshot, sendObstacleToggle, buildGrid, renderGrid, applyCell, syncRobots, syncMetrics };
+export const __test__ = {
+  setGrid(nextGrid) {
+    grid = nextGrid;
+  },
+  getGrid() {
+    return grid;
+  },
+  getTiles() {
+    return tiles;
+  },
+  getSocket() {
+    return socket;
+  }
+};
