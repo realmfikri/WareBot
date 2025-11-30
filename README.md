@@ -26,6 +26,20 @@ Run ESLint for each side:
 - Backend: `cd server && npm run lint`
 - Frontend: `cd client && npm run lint`
 
+### Testing
+- Backend unit and integration tests: `cd server && npm test`
+- Frontend interaction tests: `cd client && npm test`
+
+In CI environments, install and run each suite independently to keep caches separated:
+
+```
+npm ci --prefix server
+npm test --prefix server
+
+npm ci --prefix client
+npm test --prefix client
+```
+
 ## How it works
 - The backend maintains a 10x10 grid of cells with random load values and broadcasts changes to all connected clients.
 - Clients render the grid as interactive tiles. Clicking any tile sends a toggle message to the server, which updates the shared state and notifies every session.
