@@ -1,0 +1,109 @@
+:root {
+  color: #0f172a;
+  background-color: #f8fafc;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.app {
+  max-width: 960px;
+  width: 100%;
+  padding: 1.5rem;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  display: inline-block;
+  background: #cbd5e1;
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+
+.status-indicator.online {
+  background: #10b981;
+  box-shadow: 0 0 0 1px #047857;
+}
+
+.status-indicator.offline {
+  background: #ef4444;
+  box-shadow: 0 0 0 1px #b91c1c;
+}
+
+.grid {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+}
+
+.tile {
+  position: relative;
+  padding-top: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e2e8f0;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.tile .content {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.tile.active {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+}
+
+.tile.offline {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  color: #f8fafc;
+}
+
+.tile .load {
+  font-size: 0.9rem;
+}
+
+.tile .label {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.notice {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 8px;
+  font-weight: 600;
+}
