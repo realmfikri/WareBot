@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Warehouse Grid Simulator</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>Warehouse Grid Simulator</h1>
+        <p>Live WebSocket feed of robot activity. Click any tile to toggle it.</p>
+        <div class="status">
+          <span id="status-indicator" class="status-indicator offline"></span>
+          <span id="status-text">Disconnected</span>
+        </div>
+      </header>
+      <main>
+        <div id="grid" class="grid"></div>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
