@@ -12,10 +12,6 @@ const wss = new WebSocketServer({ server });
 const grid = new Grid(GRID_SIZE, GRID_SIZE);
 const robots = new RobotManager(grid);
 
-robots.addRobot({ id: 'robot-1', name: 'Atlas', position: { x: 0, y: 0 }, target: { x: GRID_SIZE - 1, y: GRID_SIZE - 1 } });
-robots.addRobot({ id: 'robot-2', name: 'Scout', position: { x: 2, y: GRID_SIZE - 2 }, target: { x: GRID_SIZE - 3, y: 1 } });
-robots.addRobot({ id: 'robot-3', name: 'Courier', position: { x: GRID_SIZE - 1, y: 2 }, target: { x: 0, y: GRID_SIZE - 3 } });
-
 function broadcast(payload) {
   const message = JSON.stringify(payload);
   wss.clients.forEach((client) => {
@@ -25,17 +21,21 @@ function broadcast(payload) {
   });
 }
 
-function sendSnapshot(socket) {
+async function sendSnapshot(socket) {
   socket.send(
     JSON.stringify({
       type: 'EventStateSnapshot',
       grid: grid.serialize(),
-      robots: robots.serialize()
+      robots: await robots.serialize()
     })
   );
 }
 
-function handleObstacleUpdate(x, y, obstacle) {
+async function broadcastRobots(type = 'EventRobotPathsUpdated') {
+  broadcast({ type, robots: await robots.serialize() });
+}
+
+async function handleObstacleUpdate(x, y, obstacle) {
   const updatedCell = grid.setObstacle(x, y, obstacle);
   if (!updatedCell) return;
 
@@ -46,23 +46,38 @@ function handleObstacleUpdate(x, y, obstacle) {
     cell: updatedCell
   });
 
-  const pathsChanged = robots.recalculateImpactedByCell(x, y);
+  const pathsChanged = await robots.recalculateImpactedByCell(x, y);
   if (pathsChanged) {
-    broadcast({ type: 'EventRobotPathsUpdated', robots: robots.serialize() });
+    await broadcastRobots();
   }
 }
 
-function handleMessage(raw) {
+async function handleMessage(raw) {
   const message = JSON.parse(raw.toString());
   const { type } = message;
 
   if (type === 'EventObstacleCreated' && Number.isInteger(message.x) && Number.isInteger(message.y)) {
-    handleObstacleUpdate(message.x, message.y, true);
+    await handleObstacleUpdate(message.x, message.y, true);
   } else if (type === 'EventObstacleCleared' && Number.isInteger(message.x) && Number.isInteger(message.y)) {
-    handleObstacleUpdate(message.x, message.y, false);
+    await handleObstacleUpdate(message.x, message.y, false);
   } else if (type === 'EventRobotTargetUpdated' && message.id && Number.isInteger(message.target?.x) && Number.isInteger(message.target?.y)) {
-    robots.updateRobotTarget(message.id, message.target);
-    broadcast({ type: 'EventRobotPathsUpdated', robots: robots.serialize() });
+    await robots.updateRobotTarget(message.id, message.target);
+    await broadcastRobots();
+  } else if (type === 'EventRobotCreated' && message.id && message.name && Number.isInteger(message.position?.x) && Number.isInteger(message.position?.y)) {
+    await robots.addRobot({
+      id: message.id,
+      name: message.name,
+      position: message.position,
+      target: message.target || message.position,
+      speed: Number.isFinite(message.speed) ? message.speed : undefined
+    });
+    await broadcastRobots('EventRobotListUpdated');
+  } else if (type === 'EventRobotRemoved' && message.id) {
+    await robots.removeRobot(message.id);
+    await broadcastRobots('EventRobotListUpdated');
+  } else if (type === 'EventRobotSpeedUpdated' && message.id && Number.isFinite(message.speed)) {
+    await robots.updateRobotSpeed(message.id, message.speed);
+    await broadcastRobots('EventRobotListUpdated');
   }
 }
 
@@ -70,14 +85,22 @@ wss.on('connection', (socket) => {
   sendSnapshot(socket);
 
   socket.on('message', (raw) => {
-    try {
-      handleMessage(raw);
-    } catch (error) {
+    Promise.resolve(handleMessage(raw)).catch((error) => {
       console.error('Failed to handle message', error);
-    }
+    });
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`WebSocket server running on ws://localhost:${PORT}`);
-});
+Promise.all([
+  robots.addRobot({ id: 'robot-1', name: 'Atlas', position: { x: 0, y: 0 }, target: { x: GRID_SIZE - 1, y: GRID_SIZE - 1 } }),
+  robots.addRobot({ id: 'robot-2', name: 'Scout', position: { x: 2, y: GRID_SIZE - 2 }, target: { x: GRID_SIZE - 3, y: 1 } }),
+  robots.addRobot({ id: 'robot-3', name: 'Courier', position: { x: GRID_SIZE - 1, y: 2 }, target: { x: 0, y: GRID_SIZE - 3 } })
+])
+  .catch((error) => {
+    console.error('Failed to initialize robots', error);
+  })
+  .finally(() => {
+    server.listen(PORT, () => {
+      console.log(`WebSocket server running on ws://localhost:${PORT}`);
+    });
+  });
