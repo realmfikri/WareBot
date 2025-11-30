@@ -2,11 +2,20 @@ const gridElement = document.getElementById('grid');
 const statusIndicator = document.getElementById('status-indicator');
 const statusText = document.getElementById('status-text');
 const robotList = document.getElementById('robot-list');
+const metricsContainer = document.getElementById('metrics');
 
 let socket;
 let grid = [];
 let robots = [];
 let tiles = [];
+let metrics = {
+  completedTasks: 0,
+  averageCompletionMs: 0,
+  lastCompletionMs: null,
+  collisionsAvoided: 0,
+  congestionEvents: 0,
+  tasksPerMinute: 0
+};
 
 function setStatus(online) {
   statusIndicator.classList.toggle('online', online);
@@ -152,15 +161,63 @@ function renderRobotList() {
   });
 }
 
+function formatMs(ms) {
+  if (!ms && ms !== 0) return '—';
+  if (ms < 1000) return `${ms.toFixed(0)} ms`;
+  return `${(ms / 1000).toFixed(1)} s`;
+}
+
+function formatNumber(value, digits = 1) {
+  return Number.isFinite(value) ? value.toFixed(digits) : '0';
+}
+
+function renderMetrics() {
+  if (!metricsContainer) return;
+  metricsContainer.innerHTML = '';
+
+  const items = [
+    { label: 'Tasks completed', value: metrics.completedTasks },
+    { label: 'Avg completion', value: formatMs(metrics.averageCompletionMs) },
+    { label: 'Last completion', value: formatMs(metrics.lastCompletionMs) },
+    { label: 'Collisions avoided', value: metrics.collisionsAvoided },
+    { label: 'Congestion waits', value: metrics.congestionEvents },
+    { label: 'Tasks per minute', value: formatNumber(metrics.tasksPerMinute, 2) }
+  ];
+
+  items.forEach((item) => {
+    const card = document.createElement('div');
+    card.className = 'metric-card';
+
+    const value = document.createElement('div');
+    value.className = 'metric-value';
+    value.textContent = item.value;
+
+    const label = document.createElement('div');
+    label.className = 'metric-label';
+    label.textContent = item.label;
+
+    card.appendChild(value);
+    card.appendChild(label);
+    metricsContainer.appendChild(card);
+  });
+}
+
 function syncRobots(nextRobots) {
   robots = nextRobots || [];
   renderRobotList();
   renderGrid();
 }
 
+function syncMetrics(nextMetrics) {
+  if (!nextMetrics) return;
+  metrics = nextMetrics;
+  renderMetrics();
+}
+
 function handleSnapshot(payload) {
   grid = payload.grid || [];
   syncRobots(payload.robots || []);
+  syncMetrics(payload.metrics);
 }
 
 function handleCellUpdate(payload) {
@@ -169,6 +226,7 @@ function handleCellUpdate(payload) {
 
 function handleRobotPaths(payload) {
   syncRobots(payload.robots || []);
+  syncMetrics(payload.metrics);
 }
 
 function connect() {
@@ -196,6 +254,9 @@ function connect() {
       if (payload.type === 'EventRobotListUpdated') {
         handleRobotPaths(payload);
       }
+      if (payload.type === 'EventSimulationUpdated') {
+        handleRobotPaths(payload);
+      }
     } catch (error) {
       console.error('Failed to parse message', error);
     }
@@ -220,3 +281,4 @@ function sendObstacleToggle(x, y) {
 
 setStatus(false);
 connect();
+renderMetrics();
