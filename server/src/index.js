@@ -26,13 +26,14 @@ async function sendSnapshot(socket) {
     JSON.stringify({
       type: 'EventStateSnapshot',
       grid: grid.serialize(),
-      robots: await robots.serialize()
+      robots: await robots.serialize(),
+      metrics: await robots.getMetrics()
     })
   );
 }
 
 async function broadcastRobots(type = 'EventRobotPathsUpdated') {
-  broadcast({ type, robots: await robots.serialize() });
+  broadcast({ type, robots: await robots.serialize(), metrics: await robots.getMetrics() });
 }
 
 async function handleObstacleUpdate(x, y, obstacle) {
@@ -103,4 +104,15 @@ Promise.all([
     server.listen(PORT, () => {
       console.log(`WebSocket server running on ws://localhost:${PORT}`);
     });
+
+    setInterval(async () => {
+      const { moved, metricsChanged } = await robots.simulateTick(0.5);
+      if (moved || metricsChanged) {
+        broadcast({
+          type: 'EventSimulationUpdated',
+          robots: await robots.serialize(),
+          metrics: await robots.getMetrics()
+        });
+      }
+    }, 500);
   });
